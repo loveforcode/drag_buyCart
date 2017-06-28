@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>组件嵌套之拖拽购物车</title>
+    <style type="text/css">
+        * {
+            margin:0;
+            padding:0 ;
+        }
+        .drag{
+            position: absolute;
+            left:0;
+            top:0;
+            border: 10px solid red;
+        }
+    </style>
+    <script type="text/javascript" src="vue.js"></script>
+</head>
+<body>
+    <div id="box">
+        <drag></drag>
+    </div>
+</body>
+</html>
+<!--1.购物车组件的内容-->
+<template id="buycar">
+    <div class="buycar">
+        <dl v-for="(item,index) in arr">
+            <dt>商品名称：{{item.name}}</dt>
+            <dd>数量<input type="number" v-model="item.count"></dd>
+            <dd>单价:{{item.price | currency}}</dd>
+            <dd>小计:{{item.count * item.price | currency(3,'￥')}}</dd>
+        </dl>
+        总价:{{ cptSum | currency(4,'RMB')}}
+    </div>
+</template>
+<!--2.拖拽组件的内容-->
+<template id="drag">
+    <div class="drag" v-drag>
+        <h2>标题</h2>
+        <buycar></buycar>
+    </div>
+</template>
+<script type="text/javascript">
+    //定义组件
+    //1.定义购物车组件
+    let buycar = {
+        template : '#buycar',
+        data : function(){
+            return {
+                arr:[
+                    {name:'西红柿',count:1,price:9.2},
+                    {name:'黄瓜',count:2,price:3.7},
+                    {name:'鸡蛋',count:3,price:4.8}
+                ]
+            }
+        },
+        filters : {
+            currency : function(input,digit=2,symbol='￥'){
+                return symbol + input.toFixed(digit);
+            }
+        },
+        computed : {
+            cptSum : function(){
+                let result = 0;
+                this.arr.forEach(function(item){
+                    if(item.count < 0){
+                        item.count = 0;
+                    }
+                    result += item.count * item.price;
+                });
+                return result;
+            }
+        }
+    };
+    //2.定义拖拽组件
+    let drag = {
+        template : '#drag',
+        data : function(){
+            return {
+                json:{background:'red',position:'absolute',left:'0',top:'0'}
+            }
+        },
+        directives : {
+            drag(el,binding){
+                el.onmousedown = function(e){
+                    var disX = e.clientX - el.offsetLeft;
+                    var disY = e.clientY - el.offsetTop;
+                    document.onmousemove = function(e){
+                        var l = e.clientX - disX;
+                        var t = e.clientY - disY;
+                        if(l < 0){
+                            l = 0;
+                        };
+                        if(l > document.documentElement.clientWidth - el.offsetWidth){
+                            l = document.documentElement.clientWidth - el.offsetWidth;
+                        };
+                        if(t < 0){
+                            t = 0;
+                        };
+                        if(t > document.documentElement.clientHeight - el.offsetHeight){
+                            t = document.documentElement.clientHeight - el.offsetHeight;
+                        }
+                        el.style.left = l + 'px';
+                        el.style.top = t + 'px';
+                    };
+                    document.onmouseup = function(){
+                        document.onmousemove = document.onmouseup = null;
+                    };
+                    //return false;
+                }
+            }
+        },
+        //注册buyCar组件
+        components : {
+            buycar
+        }
+    };
+    new Vue({
+        el : '#box',
+        data : {},
+        methods : {},
+        computed : {},
+        directives : {},
+        filters : {},
+        //注册drag组件
+        components : {
+            drag
+        }
+    })
+</script>
